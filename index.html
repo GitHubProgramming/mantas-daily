@@ -10,11 +10,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
     <title>Mantas Daily</title>
-    <script type="module" crossorigin src="/mantas-daily/assets/index-DwdZIixT.js"></script>
+    <script type="module" crossorigin src="/mantas-daily/assets/index-Dn5ZBBab.js"></script>
     <link rel="stylesheet" crossorigin href="/mantas-daily/assets/index-B4rWsScR.css">
   <link rel="manifest" href="/mantas-daily/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/mantas-daily/registerSW.js"></script></head>
   <body>
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) { r.unregister(); });
+        });
+        caches.keys().then(function(names) {
+          names.forEach(function(n) { caches.delete(n); });
+        });
+      }
+    </script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </body>
 </html>
