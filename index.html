@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<title>Mantas Daily</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F7F5F2;--bg2:#FFFFFF;--bg3:#F0EDE8;
+  --ink:#1A1814;--ink2:#6B6560;--ink3:#A8A29C;
+  --accent:#2B4D3F;--accent-light:#E8F0EC;--accent-mid:#4A7C65;
+  --gold:#C9A84C;--gold-light:#FBF5E6;
+  --red:#C0392B;--red-light:#FDECEA;
+  --blue:#2B3D6B;--blue-light:#EBF0FC;
+  --rest:#7B6FAB;--rest-light:#F0EEF9;
+  --border:#E8E3DC;--border2:#D4CEC6;
+  --radius:16px;--radius-sm:10px;
+}
+body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;min-height:100vh;overscroll-behavior:none}
+.app{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:80px}
+.header{display:flex;align-items:center;gap:12px;padding:20px 20px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)}
+.logo{width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:18px;color:#fff}
+.header-title{font-size:16px;font-weight:600;color:var(--ink);flex:1;letter-spacing:-0.3px}
+.header-date{font-size:12px;color:var(--ink3)}
+.streak-pill{display:flex;align-items:center;gap:5px;background:var(--gold-light);border:1px solid #E8D89A;border-radius:20px;padding:5px 12px;font-size:13px;font-weight:600;color:#8B6914}
+.screen{flex:1;padding:20px 16px;overflow-y:auto}
+.hidden{display:none!important}
+
+/* Sync bar */
+.sync-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;font-size:13px;color:var(--ink2)}
+.sync-bar.synced{background:var(--accent-light);border-color:var(--accent-mid)}
+.sync-bar.synced .sync-status{color:var(--accent);font-weight:600}
+.sync-bar.error{background:var(--red-light);border-color:#E8A8A8}
+.sync-bar.error .sync-status{color:var(--red)}
+.sync-icon{font-size:16px;flex-shrink:0}
+.sync-status{flex:1}
+.sync-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.sync-btn:active{opacity:0.8}
+
+/* Login screen */
+.login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;padding:40px 20px;text-align:center}
+.login-icon{font-size:56px;margin-bottom:20px}
+.login-title{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink);margin-bottom:10px}
+.login-sub{font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:32px;max-width:280px}
+.login-note{font-size:12px;color:var(--ink3);margin-top:16px}
+
+/* Workout banner */
+.workout-banner{border-radius:20px;padding:20px;margin-bottom:14px;display:flex;align-items:center;gap:14px}
+.workout-banner.strength{background:var(--accent-light);border:1.5px solid var(--accent-mid)}
+.workout-banner.cardio{background:var(--blue-light);border:1.5px solid #5B7BC4}
+.workout-banner.rest{background:var(--rest-light);border:1.5px solid #A89CD4}
+.workout-banner.active-rest{background:var(--gold-light);border:1.5px solid #D4B86A}
+.wb-icon{font-size:32px;flex-shrink:0}
+.wb-info{flex:1}
+.wb-type{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:3px}
+.workout-banner.strength .wb-type{color:var(--accent)}
+.workout-banner.cardio .wb-type{color:var(--blue)}
+.workout-banner.rest .wb-type{color:var(--rest)}
+.workout-banner.active-rest .wb-type{color:#8B6914}
+.wb-name{font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-0.3px}
+.wb-detail{font-size:12px;color:var(--ink2);margin-top:2px;line-height:1.4}
+
+/* Next card */
+.next-card{background:var(--accent);border-radius:24px;padding:24px 22px 22px;margin-bottom:14px;position:relative;overflow:hidden}
+.next-card.cardio-card{background:var(--blue)}
+.next-card.rest-card{background:var(--rest)}
+.next-card::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:rgba(255,255,255,0.05);border-radius:50%}
+.next-label{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:12px;font-weight:500}
+.next-time{font-family:'DM Serif Display',serif;font-size:38px;color:#fff;line-height:1;margin-bottom:4px}
+.next-icon{font-size:26px;margin-bottom:6px;display:block}
+.next-name{font-size:19px;font-weight:600;color:#fff;margin-bottom:6px}
+.next-detail{font-size:13px;color:rgba(255,255,255,0.65);line-height:1.5;margin-bottom:20px}
+.check-btn{background:#fff;color:var(--accent);border:none;border-radius:14px;padding:14px 24px;font-size:15px;font-weight:600;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif;transition:transform 0.15s;letter-spacing:-0.2px}
+.check-btn:active{transform:scale(0.97)}
+.check-btn.done-btn{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3)}
+.card-done{background:var(--gold-light);border:1px solid #E8D89A;border-radius:24px;padding:24px;margin-bottom:14px;text-align:center}
+.card-done-icon{font-size:40px;margin-bottom:10px}
+.card-done-title{font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);margin-bottom:5px}
+.card-done-sub{font-size:13px;color:var(--ink2)}
+
+/* Progress */
+.progress-wrap{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:0 2px}
+.progress-bar{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width 0.5s cubic-bezier(.4,0,.2,1)}
+.progress-label{font-size:12px;color:var(--ink3);white-space:nowrap;font-weight:500}
+
+/* Metrics */
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
+.metric-card.full{grid-column:1/-1}
+.metric-label{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;font-weight:500}
+.metric-value{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink);margin-bottom:10px;line-height:1}
+.metric-value.goal-reached{color:var(--accent)}
+.metric-btns{display:flex;gap:8px;justify-content:center}
+.metric-btns button{background:var(--bg3);border:1px solid var(--border);color:var(--ink);border-radius:8px;width:36px;height:36px;font-size:18px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.metric-btns button:active{background:var(--border2)}
+.water-goal{font-size:11px;color:var(--ink3);margin-top:6px}
+.water-goal.done{color:var(--accent);font-weight:600}
+.energy-stars{display:flex;gap:5px;justify-content:center}
+.star{background:none;border:none;font-size:22px;cursor:pointer;color:var(--border2);padding:0;line-height:1}
+.star.active{color:var(--gold)}
+.weight-input{background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--ink);font-family:'DM Serif Display',serif;font-size:26px;text-align:center;padding:10px;width:130px;outline:none}
+.weight-input:focus{border-color:var(--accent)}
+
+/* Week strip */
+.week-strip{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px}
+.week-strip::-webkit-scrollbar{display:none}
+.ws-day{flex-shrink:0;width:44px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:12px;border:1.5px solid transparent}
+.ws-day.today{border-color:var(--accent);background:var(--accent-light)}
+.ws-day.today.cardio-day{border-color:#5B7BC4;background:var(--blue-light)}
+.ws-day.today.rest-day{border-color:#A89CD4;background:var(--rest-light)}
+.ws-day.today.active-day{border-color:#D4B86A;background:var(--gold-light)}
+.ws-label{font-size:10px;color:var(--ink3);font-weight:500;text-transform:uppercase;letter-spacing:0.05em}
+.ws-icon{font-size:18px}
+.ws-day.today .ws-label{color:var(--accent);font-weight:700}
+.ws-day.today.cardio-day .ws-label{color:var(--blue)}
+.ws-day.today.rest-day .ws-label{color:var(--rest)}
+
+/* Plan */
+.section-label{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;font-weight:500}
+.plan-item{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.plan-item:last-child{border-bottom:none}
+.plan-item.done{opacity:0.38}
+.plan-item.skipped{opacity:0.5}
+.plan-left{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+.plan-status-btn{background:none;border:none;font-size:22px;cursor:pointer;padding:0;line-height:1;width:30px;text-align:center}
+.plan-skip-btn{background:none;border:none;font-size:10px;color:var(--ink3);cursor:pointer;padding:0;font-family:'DM Sans',sans-serif;line-height:1}
+.plan-content{flex:1;cursor:pointer}
+.plan-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.plan-time{font-size:12px;color:var(--ink3);min-width:38px;font-weight:500}
+.plan-icon{font-size:15px}
+.plan-name{font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-0.2px}
+.skipped-badge{font-size:10px;color:var(--red);background:var(--red-light);border-radius:4px;padding:1px 6px;font-weight:500}
+.plan-detail{font-size:13px;color:var(--ink2);line-height:1.6;margin-top:10px;padding:12px 14px;background:var(--accent-light);border-radius:var(--radius-sm);border-left:2px solid var(--accent-mid)}
+
+/* Week screen */
+.week-schedule{margin-bottom:16px}
+.ws-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:8px}
+.ws-row.today-row{border-color:var(--accent);background:var(--accent-light)}
+.ws-row.cardio-row{border-color:#5B7BC4;background:var(--blue-light)}
+.ws-row.rest-row{border-color:#A89CD4;background:var(--rest-light)}
+.ws-row.active-row{border-color:#D4B86A;background:var(--gold-light)}
+.ws-row-day{font-size:12px;font-weight:700;color:var(--ink);min-width:28px}
+.ws-row-icon{font-size:20px}
+.ws-row-info{flex:1}
+.ws-row-name{font-size:14px;font-weight:600;color:var(--ink)}
+.ws-row-sub{font-size:12px;color:var(--ink2);margin-top:1px}
+.today-badge{font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:2px 7px;font-weight:600}
+.week-days-strip{display:flex;justify-content:space-between;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 12px;margin-bottom:12px}
+.week-day{display:flex;flex-direction:column;align-items:center;gap:6px}
+.wd-label{font-size:10px;color:var(--ink3);font-weight:500;text-transform:uppercase;letter-spacing:0.05em}
+.wd-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.wd-dot.complete{background:var(--accent);color:#fff}
+.wd-dot.partial{background:var(--accent-light);color:var(--accent);border:1.5px solid var(--accent-mid)}
+.wd-dot.empty{background:var(--bg3);color:var(--ink3)}
+.wd-date{font-size:11px;color:var(--ink3)}
+.week-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.wstat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 10px;text-align:center}
+.wstat-val{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);margin-bottom:3px;line-height:1}
+.wstat-label{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.07em;font-weight:500}
+.week-note{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.note-title{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;font-weight:600}
+.note-body{font-size:14px;color:var(--ink2);line-height:1.7}
+
+/* Nav */
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(247,245,242,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:10px 0 env(safe-area-inset-bottom,10px)}
+.nav button{flex:1;background:none;border:none;color:var(--ink3);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:6px 0;font-size:20px;font-family:'DM Sans',sans-serif;transition:color 0.2s}
+.nav button small{font-size:10px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase}
+.nav button.active{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="logo">M</div>
+    <div>
+      <div class="header-title">Mantas Daily</div>
+      <div class="header-date" id="header-date"></div>
+    </div>
+    <div class="streak-pill" id="streak">🔥 0 d.</div>
+  </header>
+
+  <div id="screen-home" class="screen">
+    <div id="sync-bar-wrap"></div>
+    <div id="week-strip-wrap"></div>
+    <div id="workout-banner-wrap"></div>
+    <div id="next-card-wrap"></div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+      <span class="progress-label" id="prog-label">0/8</span>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Vanduo</div>
+        <div class="metric-value" id="water-val">0 L</div>
+        <div class="metric-btns">
+          <button onclick="changeWater(-0.5)">−</button>
+          <button onclick="changeWater(0.5)">+</button>
+        </div>
+        <div class="water-goal" id="water-goal">tikslas 2.5 L</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Energija</div>
+        <div class="metric-value" id="energy-val">—</div>
+        <div class="energy-stars" id="energy-stars"></div>
+      </div>
+      <div class="metric-card full">
+        <div class="metric-label">Svoris</div>
+        <input class="weight-input" type="number" step="0.1" id="weight-input" placeholder="90.0" oninput="saveWeight(this.value)"/>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-plan" class="screen hidden">
+    <div class="section-label">Šiandienos planas</div>
+    <div id="plan-list"></div>
+  </div>
+
+  <div id="screen-week" class="screen hidden">
+    <div class="section-label">Savaitės grafkas</div>
+    <div class="week-schedule" id="week-schedule"></div>
+    <div class="section-label">Progresas</div>
+    <div class="week-days-strip" id="week-days"></div>
+    <div class="week-stats" id="week-stats"></div>
+    <div class="week-note">
+      <div class="note-title">Claude pastabos</div>
+      <div class="note-body">Pradėk pildyti — po savaitės čia pasirodys vertinimas.</div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="active" onclick="showTab('home',this)"><span>⚡</span><small>Dabar</small></button>
+    <button onclick="showTab('plan',this)"><span>📋</span><small>Planas</small></button>
+    <button onclick="showTab('week',this)"><span>📅</span><small>Savaitė</small></button>
+  </nav>
+</div>
+
+<script>
+const CLIENT_ID='483314750432-4h9hc5drbkffadkrichm5ndm5rokmm83.apps.googleusercontent.com';
+const SHEET_ID='1PwC-5Q7k-he65Jd9dTtRyv1f5TYCraYIoVbhlak8dYk';
+const SHEET_NAME='Sheet1';
+
+const WEEK_PLAN=[
+  {day:0,type:'rest',      icon:'😴',name:'Poilsis',            sub:'Šeima, poilsis. Užtarnautas.',cls:'rest'},
+  {day:1,type:'strength',  icon:'💪',name:'Freeletics / Jėga', sub:'Pasirink WOD arba jėgos treniruotę. 45 min.',cls:'strength'},
+  {day:2,type:'strength',  icon:'💪',name:'Freeletics / Jėga', sub:'Pasirink WOD arba jėgos treniruotę. 45 min.',cls:'strength'},
+  {day:3,type:'active',    icon:'🚶',name:'Aktyvus poilsis',    sub:'Ėjimas 20-30 min arba tempimas.',cls:'active'},
+  {day:4,type:'strength',  icon:'💪',name:'Freeletics / Jėga', sub:'Pasirink WOD arba jėgos treniruotę. 45 min.',cls:'strength'},
+  {day:5,type:'strength',  icon:'💪',name:'Freeletics / Jėga', sub:'Pasirink WOD arba jėgos treniruotę. 45 min.',cls:'strength'},
+  {day:6,type:'cardio',    icon:'🏃',name:'Bėgimas',            sub:'30-40 min lengvas tempas. Hyrox pasiruošimas.',cls:'cardio'},
+];
+
+const MEALS=[
+  {id:'wake',    time:'06:00',label:'Kėlimasis',       icon:'⏰',detail:'Atsistok iš karto. 500ml vandens. Sporto apranga prie lovos.'},
+  {id:'workout', time:'06:05',label:'Treniruotė',      icon:'💪',detail:'Žiūrėk šiandienos treniruotę viršuje. Jei per sunku — 15 min. Bet daryk.'},
+  {id:'meal1',   time:'07:00',label:'Pusryčiai',       icon:'🍳',detail:'3 kiaušiniai + 80g avižų su pienu. ~650 kcal · B:45g'},
+  {id:'meal2',   time:'10:00',label:'Antri pusryčiai', icon:'🧀',detail:'250g varškė + 1 bananas. ~380 kcal · B:32g'},
+  {id:'meal3',   time:'13:00',label:'Pietūs',          icon:'🍗',detail:'300g vištienos blauzdelės + 200g ryžiai + daržovės. ~750 kcal · B:55g'},
+  {id:'meal4',   time:'16:30',label:'Užkandis',        icon:'🥚',detail:'3 kiaušiniai kietai virti + 2 riekės duonos. ~400 kcal · B:28g'},
+  {id:'meal5',   time:'19:30',label:'Vakarienė',       icon:'🍲',detail:'300g vištienos blauzdelės + 150g grikiai. ~700 kcal · B:55g · Kreatinas 1 kaps.'},
+  {id:'phone',   time:'22:00',label:'Telefonas laukan',icon:'📵',detail:'Telefonas į kitą kambarį. Miegoti 22:30.'},
+];
+
+const DAYS_LT=['Sk','Pr','An','Tr','Kt','Pn','Š'];
+const DAYS_FULL=['Sekmadienis','Pirmadienis','Antradienis','Trečiadienis','Ketvirtadienis','Penktadienis','Šeštadienis'];
+const MONTHS=['sausio','vasario','kovo','balandžio','gegužės','birželio','liepos','rugpjūčio','rugsėjo','spalio','lapkričio','gruodžio'];
+const WATER_GOAL=2.5;
+
+function todayKey(){return new Date().toISOString().slice(0,10)}
+function loadDay(k){try{const r=localStorage.getItem('day_'+k);return r?JSON.parse(r):{}}catch{return{}}}
+function saveDay(k,d){localStorage.setItem('day_'+k,JSON.stringify(d))}
+function loadHistory(){try{const r=localStorage.getItem('history');return r?JSON.parse(r):{}}catch{return{}}}
+
+let state=loadDay(todayKey());
+let expandedId=null;
+let accessToken=localStorage.getItem('gAccessToken')||null;
+let syncStatus='idle'; // idle | syncing | synced | error
+
+// ── Google Auth ──────────────────────────────────────────────
+function initGoogleAuth(){
+  if(typeof google==='undefined')return;
+  google.accounts.id.initialize({
+    client_id:CLIENT_ID,
+    callback:handleCredential,
+    auto_select:false,
+  });
+}
+
+function handleCredential(resp){
+  // Exchange id_token for access token via token client
+  const tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,
+    scope:'https://www.googleapis.com/auth/spreadsheets',
+    callback:(tokenResp)=>{
+      if(tokenResp.access_token){
+        accessToken=tokenResp.access_token;
+        localStorage.setItem('gAccessToken',accessToken);
+        syncNow();
+        renderSyncBar();
+      }
+    },
+  });
+  tokenClient.requestAccessToken();
+}
+
+function signIn(){
+  if(typeof google==='undefined'){alert('Google API neįkelta. Patikrink internetą.');return;}
+  const tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,
+    scope:'https://www.googleapis.com/auth/spreadsheets',
+    callback:(tokenResp)=>{
+      if(tokenResp.access_token){
+        accessToken=tokenResp.access_token;
+        localStorage.setItem('gAccessToken',accessToken);
+        renderSyncBar();
+        renderHome();
+        syncNow();
+      }
+    },
+  });
+  tokenClient.requestAccessToken();
+}
+
+function signOut(){
+  accessToken=null;
+  localStorage.removeItem('gAccessToken');
+  renderSyncBar();
+  renderHome();
+}
+
+// ── Sheets Sync ──────────────────────────────────────────────
+async function syncNow(){
+  if(!accessToken){renderSyncBar();return;}
+  syncStatus='syncing';
+  renderSyncBar();
+  try{
+    const today=todayKey();
+    const s=loadDay(today);
+    const done=MEALS.filter(m=>s[m.id]==='done').length;
+    const skipped=MEALS.filter(m=>s[m.id]==='skip').length;
+    const wp=getTodayPlan();
+
+    const row=[
+      today,
+      s.wake==='done'?'Taip':'Ne',
+      s.workout==='done'?'Padaryta':s.workout==='skip'?'Praleista':wp.type==='rest'||wp.type==='active'?'Poilsis':'—',
+      done+'/'+MEALS.length,
+      (s._water||0),
+      (s._energy||''),
+      (s._weight||''),
+    ];
+
+    // Find existing row for today or append
+    const readResp=await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}!A:A`,
+      {headers:{Authorization:'Bearer '+accessToken}}
+    );
+    const readData=await readResp.json();
+    const rows=readData.values||[];
+    let rowIndex=-1;
+    rows.forEach((r,i)=>{if(r[0]===today)rowIndex=i+1;});
+
+    if(rowIndex>0){
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}!A${rowIndex}:G${rowIndex}?valueInputOption=USER_ENTERED`,
+        {method:'PUT',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+         body:JSON.stringify({values:[row]})}
+      );
+    } else {
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}!A:G:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+        {method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+         body:JSON.stringify({values:[row]})}
+      );
+    }
+    syncStatus='synced';
+    localStorage.setItem('lastSync',new Date().toLocaleTimeString('lt-LT',{hour:'2-digit',minute:'2-digit'}));
+  } catch(e){
+    syncStatus='error';
+    accessToken=null;
+    localStorage.removeItem('gAccessToken');
+  }
+  renderSyncBar();
+}
+
+function renderSyncBar(){
+  const wrap=document.getElementById('sync-bar-wrap');
+  if(!wrap)return;
+  const lastSync=localStorage.getItem('lastSync');
+  if(!accessToken){
+    wrap.innerHTML=`<div class="sync-bar">
+      <span class="sync-icon">☁️</span>
+      <span class="sync-status">Neprisijungta prie Google Sheets</span>
+      <button class="sync-btn" onclick="signIn()">Prisijungti</button>
+    </div>`;
+  } else if(syncStatus==='syncing'){
+    wrap.innerHTML=`<div class="sync-bar synced">
+      <span class="sync-icon">🔄</span>
+      <span class="sync-status">Sinchronizuojama...</span>
+    </div>`;
+  } else if(syncStatus==='error'){
+    wrap.innerHTML=`<div class="sync-bar error">
+      <span class="sync-icon">⚠️</span>
+      <span class="sync-status">Klaida — prisijunk iš naujo</span>
+      <button class="sync-btn" onclick="signIn()">Prisijungti</button>
+    </div>`;
+  } else {
+    wrap.innerHTML=`<div class="sync-bar synced">
+      <span class="sync-icon">✅</span>
+      <span class="sync-status">Sinchronizuota ${lastSync?'· '+lastSync:''}</span>
+      <button class="sync-btn" onclick="syncNow()">Sync</button>
+    </div>`;
+  }
+}
+
+// ── Save + Sync ───────────────────────────────────────────────
+function save(){
+  saveDay(todayKey(),state);
+  const done=MEALS.filter(m=>state[m.id]==='done').length;
+  const h=loadHistory();
+  h[todayKey()]={mealsDone:done,complete:done>=MEALS.length-1,energy:state._energy||0,water:state._water||0,weight:state._weight||''};
+  localStorage.setItem('history',JSON.stringify(h));
+  debounceSync();
+}
+
+let syncTimer=null;
+function debounceSync(){
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(syncNow,2000);
+}
+
+// ── Render ────────────────────────────────────────────────────
+function getTodayPlan(){
+  const dow=new Date().getDay();
+  return WEEK_PLAN.find(w=>w.day===dow)||WEEK_PLAN[0];
+}
+
+function getNext(){
+  const now=new Date();
+  const nowMin=now.getHours()*60+now.getMinutes();
+  for(const m of MEALS){
+    if(state[m.id]==='done'||state[m.id]==='skip')continue;
+    const[h,min]=m.time.split(':').map(Number);
+    if(h*60+min>=nowMin-30)return m;
+  }
+  return null;
+}
+
+function getStreak(){
+  const h=loadHistory();let s=0;
+  const d=new Date();d.setDate(d.getDate()-1);
+  for(let i=0;i<365;i++){
+    const k=d.toISOString().slice(0,10);
+    if(!h[k]?.complete)break;
+    s++;d.setDate(d.getDate()-1);
+  }
+  return s;
+}
+
+function statusIcon(id){
+  const s=state[id];
+  if(s==='done')return'✅';
+  if(s==='skip')return'❌';
+  return'⬜';
+}
+
+function renderWeekStrip(){
+  const dow=new Date().getDay();
+  const order=[1,2,3,4,5,6,0];
+  let html='<div class="week-strip">';
+  order.forEach(d=>{
+    const wp=WEEK_PLAN.find(w=>w.day===d);
+    const isToday=d===dow;
+    let cls='ws-day';
+    if(isToday){
+      cls+=' today';
+      if(wp.cls==='cardio')cls+=' cardio-day';
+      else if(wp.cls==='active')cls+=' active-day';
+      else if(wp.type==='rest')cls+=' rest-day';
+    }
+    html+=`<div class="${cls}"><span class="ws-label">${DAYS_LT[d]}</span><span class="ws-icon">${wp.icon}</span></div>`;
+  });
+  html+='</div>';
+  document.getElementById('week-strip-wrap').innerHTML=html;
+}
+
+function renderWorkoutBanner(){
+  const wp=getTodayPlan();
+  const clsMap={strength:'strength',cardio:'cardio',freeletics:'cardio',rest:'rest',active:'active-rest'};
+  const cls=clsMap[wp.type]||'rest';
+  const isRest=wp.type==='rest'||wp.type==='active';
+  document.getElementById('workout-banner-wrap').innerHTML=`
+    <div class="workout-banner ${cls}">
+      <div class="wb-icon">${wp.icon}</div>
+      <div class="wb-info">
+        <div class="wb-type">${isRest?'Šiandien':'Šiandienos treniruotė'}</div>
+        <div class="wb-name">${wp.name}</div>
+        <div class="wb-detail">${wp.sub}</div>
+      </div>
+    </div>`;
+}
+
+function renderHome(){
+  renderSyncBar();
+  renderWeekStrip();
+  renderWorkoutBanner();
+
+  const next=getNext();
+  const done=MEALS.filter(m=>state[m.id]==='done').length;
+  const pct=Math.round(done/MEALS.length*100);
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=done+'/'+MEALS.length+' · '+pct+'%';
+
+  const wp=getTodayPlan();
+  const cardCls=wp.cls==='cardio'?' cardio-card':wp.type==='rest'||wp.type==='active'?' rest-card':'';
+  const wrap=document.getElementById('next-card-wrap');
+  if(next){
+    const isDone=state[next.id]==='done';
+    wrap.innerHTML=`<div class="next-card${cardCls}">
+      <div class="next-label">Sekantis veiksmas</div>
+      <div class="next-time">${next.time}</div>
+      <span class="next-icon">${next.icon}</span>
+      <div class="next-name">${next.label}</div>
+      <div class="next-detail">${next.detail}</div>
+      <button class="check-btn ${isDone?'done-btn':''}" onclick="checkNext()">
+        ${isDone?'↩ Atžymėti':'✓ Padaryta'}
+      </button>
+    </div>`;
+  } else {
+    wrap.innerHTML=`<div class="card-done">
+      <div class="card-done-icon">🏆</div>
+      <div class="card-done-title">Diena baigta</div>
+      <div class="card-done-sub">Puikiai. Rytoj vėl 06:00.</div>
+    </div>`;
+  }
+
+  const w=state._water||0;
+  document.getElementById('water-val').textContent=w+' L';
+  document.getElementById('water-val').className='metric-value'+(w>=WATER_GOAL?' goal-reached':'');
+  document.getElementById('water-goal').textContent=w>=WATER_GOAL?'✓ Tikslas pasiektas!':'tikslas '+WATER_GOAL+' L';
+  document.getElementById('water-goal').className='water-goal'+(w>=WATER_GOAL?' done':'');
+  document.getElementById('energy-val').textContent=state._energy?(state._energy+'/5'):'—';
+  const stars=document.getElementById('energy-stars');
+  stars.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const b=document.createElement('button');
+    b.className='star'+(i<=(state._energy||0)?' active':'');
+    b.textContent=i<=(state._energy||0)?'★':'☆';
+    b.onclick=()=>setEnergy(i);
+    stars.appendChild(b);
+  }
+  if(state._weight)document.getElementById('weight-input').value=state._weight;
+  document.getElementById('streak').textContent='🔥 '+getStreak()+' d.';
+}
+
+function renderPlan(){
+  const list=document.getElementById('plan-list');
+  list.innerHTML='';
+  MEALS.forEach(m=>{
+    const s=state[m.id];
+    const isDone=s==='done',isSkip=s==='skip',isExp=expandedId===m.id;
+    const div=document.createElement('div');
+    div.className='plan-item'+(isDone?' done':isSkip?' skipped':'');
+    div.innerHTML=`
+      <div class="plan-left">
+        <button class="plan-status-btn" onclick="cycleStatus('${m.id}')">${statusIcon(m.id)}</button>
+        <button class="plan-skip-btn" onclick="skipItem('${m.id}')">${isSkip?'↩ atšaukti':'praleista'}</button>
+      </div>
+      <div class="plan-content" onclick="toggleDetail('${m.id}')">
+        <div class="plan-row">
+          <span class="plan-time">${m.time}</span>
+          <span class="plan-icon">${m.icon}</span>
+          <span class="plan-name">${m.label}</span>
+          ${isSkip?'<span class="skipped-badge">praleista</span>':''}
+        </div>
+        ${isExp?`<div class="plan-detail">${m.detail}</div>`:''}
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+function renderWeekScreen(){
+  const today=new Date().getDay();
+  const order=[1,2,3,4,5,6,0];
+  const clsMap={strength:'today-row',cardio:'cardio-row',freeletics:'cardio-row',rest:'rest-row',active:'active-row'};
+  let html='';
+  order.forEach(d=>{
+    const wp=WEEK_PLAN.find(w=>w.day===d);
+    const isToday=d===today;
+    const rowCls=isToday?(clsMap[wp.type]||'today-row'):'';
+    html+=`<div class="ws-row ${rowCls}">
+      <span class="ws-row-day">${DAYS_LT[d]}</span>
+      <span class="ws-row-icon">${wp.icon}</span>
+      <div class="ws-row-info">
+        <div class="ws-row-name">${wp.name}</div>
+        <div class="ws-row-sub">${wp.sub}</div>
+      </div>
+      ${isToday?'<span class="today-badge">šiandien</span>':''}
+    </div>`;
+  });
+  document.getElementById('week-schedule').innerHTML=html;
+
+  const h=loadHistory();
+  let dayHtml='',totalMeals=0,completeDays=0,eSum=0,eCount=0;
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const k=d.toISOString().slice(0,10);
+    const data=h[k];
+    let cls='empty',val='·';
+    if(data){
+      totalMeals+=data.mealsDone||0;
+      if(data.complete){completeDays++;cls='complete';val='✓';}
+      else if(data.mealsDone){cls='partial';val=data.mealsDone;}
+      if(data.energy){eSum+=data.energy;eCount++;}
+    }
+    dayHtml+=`<div class="week-day"><span class="wd-label">${DAYS_LT[d.getDay()]}</span><div class="wd-dot ${cls}">${val}</div><span class="wd-date">${d.getDate()}</span></div>`;
+  }
+  document.getElementById('week-days').innerHTML=dayHtml;
+  const avgE=eCount?(eSum/eCount).toFixed(1):null;
+  document.getElementById('week-stats').innerHTML=`
+    <div class="wstat"><div class="wstat-val">${completeDays}</div><div class="wstat-label">Pilnos dienos</div></div>
+    <div class="wstat"><div class="wstat-val">${totalMeals}</div><div class="wstat-label">Valgymai</div></div>
+    <div class="wstat"><div class="wstat-val">${avgE||'—'}</div><div class="wstat-label">Energija</div></div>`;
+}
+
+function checkNext(){
+  const next=getNext();if(!next)return;
+  state[next.id]=state[next.id]==='done'?null:'done';
+  save();renderHome();renderPlan();
+}
+function cycleStatus(id){
+  state[id]=state[id]==='done'?null:'done';
+  save();renderHome();renderPlan();
+}
+function skipItem(id){
+  state[id]=state[id]==='skip'?null:'skip';
+  save();renderHome();renderPlan();
+}
+function toggleDetail(id){expandedId=expandedId===id?null:id;renderPlan();}
+function changeWater(delta){
+  state._water=Math.max(0,Math.round(((state._water||0)+delta)*10)/10);
+  save();renderHome();
+}
+function setEnergy(n){state._energy=n;save();renderHome();}
+function saveWeight(v){state._weight=v;save();}
+function showTab(name,btn){
+  ['home','plan','week'].forEach(t=>{document.getElementById('screen-'+t).classList.toggle('hidden',t!==name)});
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(name==='home')renderHome();
+  if(name==='plan')renderPlan();
+  if(name==='week')renderWeekScreen();
+}
+
+const now=new Date();
+document.getElementById('header-date').textContent=DAYS_FULL[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()];
+if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    initGoogleAuth();
+    renderHome();
+    renderPlan();
+  },500);
+});
+</script>
+</body>
+</html>
