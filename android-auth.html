@@ -17,6 +17,10 @@ p { opacity: 0.65; font-size: 0.9rem; margin-bottom: 2rem; }
            animation: spin 0.8s linear infinite; margin: 0 auto 1.5rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .err { color: #ff6b6b; font-size: 0.85rem; margin-top: 1rem; display: none; }
+.btn { background: #C8A84B; color: #1A1A1A; border: none; border-radius: 8px;
+       padding: 14px 28px; font-size: 1rem; font-weight: bold; cursor: pointer;
+       width: 100%; margin-top: 1rem; display: none; }
+.btn:active { opacity: 0.85; }
 </style>
 </head>
 <body>
@@ -24,58 +28,59 @@ p { opacity: 0.65; font-size: 0.9rem; margin-bottom: 2rem; }
   <div class="spinner" id="sp"></div>
   <h1>DISCIPLINE</h1>
   <p id="msg">Prisijungiama su Google...</p>
+  <button class="btn" id="btn" onclick="requestToken()">Prisijungti su Google</button>
   <div class="err" id="err"></div>
 </div>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script>
 const CLIENT_ID = '459795919837-qpkjb0f9js1jbr7lq5r2je9h6t0cbgj5.apps.googleusercontent.com';
 const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
-const REDIRECT_URI = 'https://githubprogramming.github.io/mantas-daily/android-auth.html';
+
+var tokenClient;
 
 function done(token, exp) {
   document.getElementById('msg').textContent = 'Prisijungta!';
+  document.getElementById('sp').style.display = 'none';
+  document.getElementById('btn').style.display = 'none';
   window.location.href = 'lt.discipline.app://token?access_token='
     + encodeURIComponent(token) + '&expires_in=' + (exp || 3600);
 }
 
 function fail(e) {
   document.getElementById('sp').style.display = 'none';
-  const el = document.getElementById('err');
-  el.textContent = 'Klaida: ' + e;
-  el.style.display = 'block';
+  document.getElementById('btn').style.display = 'block';
+  document.getElementById('msg').textContent = 'Spausk mygtuką prisijungti:';
+  var el = document.getElementById('err');
+  if (e) { el.textContent = 'Klaida: ' + e; el.style.display = 'block'; }
 }
 
-// Check if Google redirected us back with a token in the URL hash
-const hash = new URLSearchParams(location.hash.slice(1));
-const existingToken = hash.get('access_token');
-if (existingToken) {
-  done(existingToken, parseInt(hash.get('expires_in') || '3600'));
-} else {
-  // Wait for GIS script then request token via redirect mode (no popup needed)
-  function initAndRequest() {
-    google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPE,
-      ux_mode: 'redirect',
-      redirect_uri: REDIRECT_URI,
-      callback: function(r) {
-        if (r.error) fail(r.error);
-        else done(r.access_token, r.expires_in);
-      }
-    }).requestAccessToken({ prompt: '' });
-  }
+function requestToken() {
+  if (tokenClient) tokenClient.requestAccessToken({ prompt: '' });
+}
 
-  function waitForGIS(tries) {
-    if (window.google && google.accounts && google.accounts.oauth2) {
-      initAndRequest();
-    } else if (tries > 0) {
-      setTimeout(function() { waitForGIS(tries - 1); }, 300);
-    } else {
-      fail('GIS nepavyko užkrauti. Patikrink interneto ryšį.');
+function initGIS() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPE,
+    callback: function(r) {
+      if (r.error) fail(r.error);
+      else done(r.access_token, r.expires_in);
     }
-  }
-  waitForGIS(40);
+  });
+  // Try silent first (no user gesture needed if already authed)
+  tokenClient.requestAccessToken({ prompt: '' });
 }
+
+function waitForGIS(tries) {
+  if (window.google && google.accounts && google.accounts.oauth2) {
+    initGIS();
+  } else if (tries > 0) {
+    setTimeout(function() { waitForGIS(tries - 1); }, 300);
+  } else {
+    fail('GIS nepavyko užkrauti. Patikrink interneto ryšį.');
+  }
+}
+waitForGIS(40);
 </script>
 </body>
 </html>
