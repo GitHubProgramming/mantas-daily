@@ -42,8 +42,9 @@ function done(token, exp) {
   document.getElementById('msg').textContent = 'Prisijungta!';
   document.getElementById('sp').style.display = 'none';
   document.getElementById('btn').style.display = 'none';
-  window.location.href = 'lt.discipline.app://token?access_token='
-    + encodeURIComponent(token) + '&expires_in=' + (exp || 3600);
+  window.location.href = 'intent://token?access_token=' + encodeURIComponent(token)
+    + '&expires_in=' + (exp || 3600)
+    + '#Intent;scheme=lt.discipline.app;package=lt.discipline.app;S.browser_fallback_url=https%3A%2F%2Fgithubprogramming.github.io%2Fmantas-daily%2F;end';
 }
 
 function fail(e) {
