@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prisijungta</title>
+<style>
+body { background: #2B4D3F; color: #F7F5F2; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; text-align: center; padding: 2rem; box-sizing: border-box; }
+.msg { font-size: 1.2rem; opacity: 0.9; }
+.icon { font-size: 3rem; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+<div>
+  <div class="icon">✓</div>
+  <div class="msg">Prisijungta. Grįžtama į app...</div>
+</div>
+<script>
+// Pass the authorization code back to the Android WebView via the URL fragment/query
+// The Android WebView intercepts this page load and extracts the code
+const params = new URLSearchParams(window.location.search);
+const code = params.get('code');
+const error = params.get('error');
+if (error) {
+  document.querySelector('.icon').textContent = '✗';
+  document.querySelector('.msg').textContent = 'Klaida: ' + error;
+}
+// The WebView's shouldOverrideUrlLoading will catch this page URL and extract 'code'
+</script>
+</body>
+</html>
