@@ -31,6 +31,17 @@ p { opacity: 0.65; font-size: 0.9rem; margin-bottom: 2rem; }
   <button class="btn" id="btn" onclick="requestToken()">Prisijungti su Google</button>
   <div class="err" id="err"></div>
 </div>
+<script>
+// If a service worker is active, unregister it and reload so this page loads fresh from network
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    if (regs.length > 0) {
+      Promise.all(regs.map(function(r) { return r.unregister(); }))
+        .then(function() { window.location.reload(); });
+    }
+  });
+}
+</script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script>
 const CLIENT_ID = '459795919837-qpkjb0f9js1jbr7lq5r2je9h6t0cbgj5.apps.googleusercontent.com';
