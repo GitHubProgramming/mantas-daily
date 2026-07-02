@@ -9,96 +9,132 @@
 body { background: #2B4D3F; color: #F7F5F2; font-family: system-ui, sans-serif;
        display: flex; align-items: center; justify-content: center;
        min-height: 100vh; text-align: center; padding: 2rem; }
-.card { max-width: 320px; width: 100%; }
+.card { max-width: 360px; width: 100%; }
 h1 { font-size: 1.8rem; margin-bottom: 0.4rem; letter-spacing: 0.1em; }
-p { opacity: 0.65; font-size: 0.9rem; margin-bottom: 2rem; }
-.spinner { width: 36px; height: 36px; border: 3px solid rgba(247,245,242,0.2);
-           border-top-color: #C8A84B; border-radius: 50%;
-           animation: spin 0.8s linear infinite; margin: 0 auto 1.5rem; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.err { color: #ff6b6b; font-size: 0.85rem; margin-top: 1rem; display: none; }
+p { opacity: 0.65; font-size: 0.9rem; margin-bottom: 1.5rem; }
 .btn { background: #C8A84B; color: #1A1A1A; border: none; border-radius: 8px;
        padding: 14px 28px; font-size: 1rem; font-weight: bold; cursor: pointer;
-       width: 100%; margin-top: 1rem; display: none; }
-.btn:active { opacity: 0.85; }
+       width: 100%; margin-top: 0.5rem; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn:not(:disabled):active { opacity: 0.85; }
+.err-box { background: rgba(255,80,80,0.15); border: 1px solid rgba(255,80,80,0.4);
+           border-radius: 8px; padding: 10px; margin-top: 1rem; font-size: 0.82rem;
+           color: #ff9090; display: none; }
+.log { background: rgba(0,0,0,0.35); border-radius: 8px; padding: 10px;
+       margin-top: 1.2rem; text-align: left; max-height: 240px; overflow-y: auto; }
+.log pre { font-size: 0.7rem; line-height: 1.6; white-space: pre-wrap; word-break: break-all;
+           color: #9fe8b4; font-family: monospace; }
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="spinner" id="sp"></div>
   <h1>DISCIPLINE</h1>
-  <p id="msg">Prisijungiama su Google...</p>
-  <button class="btn" id="btn" onclick="requestToken()">Prisijungti su Google</button>
-  <div class="err" id="err"></div>
+  <p id="msg">Spausk mygtuką prisijungti:</p>
+  <button class="btn" id="btn" onclick="requestToken()" disabled>Prisijungti su Google</button>
+  <div class="err-box" id="err"></div>
+  <div class="log"><pre id="logpre"></pre></div>
 </div>
 <script>
-// If a service worker is active, unregister it and reload so this page loads fresh from network
+var logs = [];
+function addLog(msg) {
+  var t = new Date().toTimeString().slice(0,8);
+  logs.push('[' + t + '] ' + msg);
+  var el = document.getElementById('logpre');
+  if (el) { el.textContent = logs.join('\n'); el.parentElement.scrollTop = el.parentElement.scrollHeight; }
+}
+function showErr(msg) {
+  var el = document.getElementById('err');
+  el.textContent = msg; el.style.display = 'block';
+  addLog('ERR: ' + msg);
+}
+
+addLog('Page loaded. URL: ' + window.location.pathname);
+
+// SW check — unregister any active SW so page loads fresh from network
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(function(regs) {
+    addLog('SW: found ' + regs.length);
     if (regs.length > 0) {
+      addLog('Unregistering SW, reloading...');
       Promise.all(regs.map(function(r) { return r.unregister(); }))
         .then(function() { window.location.reload(); });
+    } else {
+      addLog('No SW. Ready.');
+      document.getElementById('btn').disabled = false;
     }
   });
+} else {
+  addLog('SW not supported.');
+  document.getElementById('btn').disabled = false;
 }
 </script>
-<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://accounts.google.com/gsi/client" async onload="onGISLoad()" onerror="onGISError()"></script>
 <script>
+var tokenClient = null;
+var gisReady = false;
 const CLIENT_ID = '459795919837-qpkjb0f9js1jbr7lq5r2je9h6t0cbgj5.apps.googleusercontent.com';
 const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 
-var tokenClient;
-var silentFailed = false;
-
-function done(token, exp) {
-  document.getElementById('msg').textContent = 'Prisijungta!';
-  document.getElementById('sp').style.display = 'none';
-  document.getElementById('btn').style.display = 'none';
-  window.location.href = 'intent://token?access_token=' + encodeURIComponent(token)
-    + '&expires_in=' + (exp || 3600)
-    + '#Intent;scheme=lt.discipline.app;package=lt.discipline.app;S.browser_fallback_url=https%3A%2F%2Fgithubprogramming.github.io%2Fmantas-daily%2F;end';
+function onGISLoad() {
+  addLog('GIS loaded. Init token client...');
+  try {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPE,
+      callback: function(r) {
+        addLog('GIS cb: error=' + (r.error || 'none') + ' token=' + (r.access_token ? 'OK len=' + r.access_token.length : 'null'));
+        if (r.error) {
+          showErr('Klaida: ' + r.error + (r.error_description ? ' — ' + r.error_description : ''));
+          document.getElementById('btn').disabled = false;
+        } else {
+          done(r.access_token, r.expires_in);
+        }
+      }
+    });
+    gisReady = true;
+    addLog('GIS ready. Button enabled.');
+    document.getElementById('btn').disabled = false;
+  } catch(e) {
+    addLog('GIS init threw: ' + e.message);
+    showErr('GIS init klaida: ' + e.message);
+    document.getElementById('btn').disabled = false;
+  }
 }
 
-function fail(e) {
-  silentFailed = true;
-  document.getElementById('sp').style.display = 'none';
-  document.getElementById('btn').style.display = 'block';
-  document.getElementById('msg').textContent = 'Spausk mygtuką prisijungti:';
-  var el = document.getElementById('err');
-  if (e && e !== 'interaction_required' && e !== 'access_denied') {
-    el.textContent = 'Klaida: ' + e; el.style.display = 'block';
-  }
+function onGISError() {
+  addLog('GIS script load FAILED.');
+  showErr('GIS nepavyko užkrauti. Patikrink interneto ryšį.');
+  document.getElementById('btn').disabled = false;
 }
 
 function requestToken() {
-  // Use select_account after silent fails so Google account picker opens (requires user gesture)
-  var prompt = silentFailed ? 'select_account' : '';
-  if (tokenClient) tokenClient.requestAccessToken({ prompt: prompt });
-}
-
-function initGIS() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPE,
-    callback: function(r) {
-      if (r.error) fail(r.error);
-      else done(r.access_token, r.expires_in);
-    }
-  });
-  // Try silent first — works if user already granted access before
-  tokenClient.requestAccessToken({ prompt: '' });
-}
-
-function waitForGIS(tries) {
-  if (window.google && google.accounts && google.accounts.oauth2) {
-    initGIS();
-  } else if (tries > 0) {
-    setTimeout(function() { waitForGIS(tries - 1); }, 300);
-  } else {
-    fail('GIS nepavyko užkrauti. Patikrink interneto ryšį.');
+  addLog('Button tapped. gisReady=' + gisReady);
+  if (!gisReady || !tokenClient) {
+    showErr('GIS dar kraunasi, palaukk ir bandyk dar kartą.');
+    return;
+  }
+  document.getElementById('btn').disabled = true;
+  document.getElementById('err').style.display = 'none';
+  addLog('Calling requestAccessToken(select_account)...');
+  try {
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
+  } catch(e) {
+    addLog('requestAccessToken threw: ' + e.message);
+    showErr('Klaida: ' + e.message);
+    document.getElementById('btn').disabled = false;
   }
 }
-waitForGIS(40);
+
+function done(token, exp) {
+  addLog('SUCCESS! Navigating to app...');
+  document.getElementById('msg').textContent = 'Prisijungta!';
+  document.getElementById('btn').style.display = 'none';
+  var url = 'intent://token?access_token=' + encodeURIComponent(token)
+    + '&expires_in=' + (exp || 3600)
+    + '#Intent;scheme=lt.discipline.app;package=lt.discipline.app;S.browser_fallback_url=https%3A%2F%2Fgithubprogramming.github.io%2Fmantas-daily%2F;end';
+  addLog('intent URL: ' + url.slice(0, 100) + '...');
+  setTimeout(function() { window.location.href = url; }, 400);
+}
 </script>
 </body>
 </html>
