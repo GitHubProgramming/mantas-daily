@@ -37,6 +37,7 @@ const CLIENT_ID = '459795919837-qpkjb0f9js1jbr7lq5r2je9h6t0cbgj5.apps.googleuser
 const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 
 var tokenClient;
+var silentFailed = false;
 
 function done(token, exp) {
   document.getElementById('msg').textContent = 'Prisijungta!';
@@ -48,15 +49,20 @@ function done(token, exp) {
 }
 
 function fail(e) {
+  silentFailed = true;
   document.getElementById('sp').style.display = 'none';
   document.getElementById('btn').style.display = 'block';
   document.getElementById('msg').textContent = 'Spausk mygtuką prisijungti:';
   var el = document.getElementById('err');
-  if (e) { el.textContent = 'Klaida: ' + e; el.style.display = 'block'; }
+  if (e && e !== 'interaction_required' && e !== 'access_denied') {
+    el.textContent = 'Klaida: ' + e; el.style.display = 'block';
+  }
 }
 
 function requestToken() {
-  if (tokenClient) tokenClient.requestAccessToken({ prompt: '' });
+  // Use select_account after silent fails so Google account picker opens (requires user gesture)
+  var prompt = silentFailed ? 'select_account' : '';
+  if (tokenClient) tokenClient.requestAccessToken({ prompt: prompt });
 }
 
 function initGIS() {
@@ -68,7 +74,7 @@ function initGIS() {
       else done(r.access_token, r.expires_in);
     }
   });
-  // Try silent first (no user gesture needed if already authed)
+  // Try silent first — works if user already granted access before
   tokenClient.requestAccessToken({ prompt: '' });
 }
 
